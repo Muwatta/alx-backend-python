@@ -1,7 +1,7 @@
 import sqlite3
 import functools
 import logging
-
+from log_queries import log_queries 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def log_queries(func):
