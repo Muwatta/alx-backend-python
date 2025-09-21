@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Database seeding command for travel app."""
+"""Management command to seed travel app database - Robust version."""
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
@@ -13,18 +13,30 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    """Seed travel app database with sample data."""
+    """Command to populate database with sample travel data."""
     
-    help = 'Populate database with sample travel listings and bookings'
+    help = 'Seed the database with sample travel listings, bookings, and reviews'
     
     def add_arguments(self, parser):
-        parser.add_argument('--users', type=int, default=6, help='Number of users')
-        parser.add_argument('--listings', type=int, default=12, help='Number of listings')
-        parser.add_argument('--bookings', type=int, default=15, help='Number of bookings')
-        parser.add_argument('--reviews', type=int, default=10, help='Number of reviews')
+        parser.add_argument(
+            '--users', type=int, default=6,
+            help='Number of users to create (default: 6)'
+        )
+        parser.add_argument(
+            '--listings', type=int, default=12,
+            help='Number of listings to create (default: 12)'
+        )
+        parser.add_argument(
+            '--bookings', type=int, default=15,
+            help='Number of bookings to create (default: 15)'
+        )
+        parser.add_argument(
+            '--reviews', type=int, default=10,
+            help='Number of reviews to create (default: 10)'
+        )
     
     def handle(self, *args, **options):
-        """Execute seeding."""
+        """Execute the seeding process."""
         self.stdout.write('Starting database seeding...')
         
         # Clear existing data
@@ -41,117 +53,207 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(
-                f'Seeding complete! {len(users)} users, {len(listings)} listings, '
-                f'{len(bookings)} bookings, {len(reviews)} reviews created!'
+                f'Seeding complete! Created {len(users)} users, '
+                f'{len(listings)} listings, {len(bookings)} bookings, '
+                f'{len(reviews)} reviews created!'
             )
         )
-    
+
+
     def _create_users(self, count):
-        """Create users (hosts and guests)."""
+        """Create sample users (hosts and guests)."""
         users = []
         
-        # Hosts
-        hosts = [
-            {'username': 'sarah_h', 'email': 'sarah@travel.com', 'first': 'Sarah', 'last': 'Host'},
-            {'username': 'mike_h', 'email': 'mike@travel.com', 'first': 'Mike', 'last': 'Landlord'},
+        # Create 2-3 hosts first
+        host_data = [
+            {'username': 'sarah_host', 'email': 'sarah@travelapp.com', 'first_name': 'Sarah', 'last_name': 'Johnson'},
+            {'username': 'mike_host', 'email': 'mike@travelapp.com', 'first_name': 'Mike', 'last_name': 'Williams'},
+            {'username': 'emma_host', 'email': 'emma@travelapp.com', 'first_name': 'Emma', 'last_name': 'Davis'},
         ]
         
-        for data in hosts:
-            user = User.objects.create_user(
-                username=data['username'],
-                email=data['email'],
-                first_name=data['first'],
-                last_name=data['last'],
-                password='pass123'
-            )
-            users.append(user)
+        num_hosts = min(3, count // 2)  # At least 2 hosts, but not more than half
+        for i in range(num_hosts):
+            try:
+                user = User.objects.create_user(
+                    username=host_data[i]['username'],
+                    email=host_data[i]['email'],
+                    first_name=host_data[i]['first_name'],
+                    last_name=host_data[i]['last_name'],
+                    password='password123'
+                )
+                users.append(user)
+                self.stdout.write(f'Created host: {user.email}')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Failed to create host {i+1}: {e}'))
         
-        # Guests
-        guest_first = ['Alice', 'Bob', 'Carol', 'David', 'Emma']
-        guest_last = ['Guest', 'Traveler', 'Visitor', 'Explorer']
+        # Create remaining as guests
+        num_guests = count - len(users)
+        guest_names = [
+            ('Alice', 'Wonder'), ('Bob', 'Builder'), ('Carol', 'Davis'),
+            ('David', 'Evans'), ('Emma', 'Foster'), ('Frank', 'Green'),
+            ('Grace', 'Harris'), ('Henry', 'Irving'), ('Ivy', 'Jackson'),
+            ('Jack', 'King'), ('Kelly', 'Lewis'), ('Liam', 'Miller')
+        ]
         
-        for i in range(count - 2):
-            user = User.objects.create_user(
-                username=f'guest{i}',
-                email=f'guest{i}@travel.com',
-                first_name=guest_first[i % len(guest_first)],
-                last_name=guest_last[i % len(guest_last)],
-                password='pass123'
-            )
-            users.append(user)
+        for i in range(num_guests):
+            try:
+                first, last = guest_names[i % len(guest_names)]
+                user = User.objects.create_user(
+                    username=f'guest{i+1}',
+                    email=f'guest{i+1}@travelapp.com',
+                    first_name=first,
+                    last_name=last,
+                    password='password123'
+                )
+                users.append(user)
+                if (i + 1) % 2 == 0:
+                    self.stdout.write(f'Created guest {i+1}: {user.email}')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Failed to create guest {i+1}: {e}'))
         
-        self.stdout.write(f'Created {len(users)} users')
+        self.stdout.write(f'Created {len(users)} total users ({len([u for u in users if u.username.startswith("host")])} hosts)')
         return users
-    
+
+
     def _create_listings(self, count, users):
-        """Create property listings."""
+        """Create sample property listings."""
         listings = []
-        hosts = [u for u in users if u.email.endswith('@travel.com')]
         
-        cities = ['New York', 'Los Angeles', 'Miami', 'Austin', 'Seattle']
-        types = ['apartment', 'house', 'room']
+        # Get host users (users with 'host' in username)
+        host_users = [u for u in users if u.username.startswith('host')]
+        
+        # Fallback if no hosts
+        if not host_users:
+            self.stdout.write(self.style.WARNING('No host users found - using first user as host'))
+            host_users = [users[0]] if users else []
+        
+        if not host_users:
+            self.stdout.write(self.style.ERROR('Cannot create listings - no users available'))
+            return listings  # Return empty list
+        
+        cities = ['New York', 'Los Angeles', 'Miami', 'Austin', 'Seattle', 'Denver', 'Chicago', 'Boston']
+        property_types = ['apartment', 'house', 'room', 'villa']
+        adjectives = ['Cozy', 'Modern', 'Luxury', 'Downtown', 'Beachfront', 'City Center']
         
         for i in range(count):
-            listing = Listing.objects.create(
-                title=f"Cozy {random.choice(types)} in {random.choice(cities)}",
-                description=f"Beautiful {random.choice(types)} with modern amenities.",
-                address=f"{random.randint(100, 999)} {random.choice(['St', 'Ave', 'Blvd'])}",
-                city=random.choice(cities),
-                price_per_night=Decimal(random.uniform(80, 300)),
-                max_guests=random.randint(2, 4),
-                bedrooms=random.randint(1, 2),
-                host=random.choice(hosts) if hosts else users[0],
-                property_type=random.choice(types)
-            )
-            listings.append(listing)
-            
-            if i % 3 == 0:
-                self.stdout.write(f'Created {i+1}/{count} listings...')
+            try:
+                listing = Listing.objects.create(
+                    title=f"{random.choice(adjectives)} {random.choice(property_types).title()} in {random.choice(cities)}",
+                    description=f"Beautiful {random.choice(property_types)} with modern amenities and great location in {random.choice(cities)}. Perfect for your next vacation!",
+                    address=f"{random.randint(100, 9999)} {random.choice(['Main St', 'Oak Ave', 'Pine Rd', 'Elm Blvd', 'Cedar Ln'])}",
+                    city=random.choice(cities),
+                    country='USA',
+                    price_per_night=Decimal(random.uniform(65, 420)).quantize(Decimal('0.01')),
+                    max_guests=random.randint(1, 6),
+                    bedrooms=random.randint(1, 4),
+                    beds=random.randint(1, 5),
+                    baths=Decimal(random.choice([1.0, 1.5, 2.0, 2.5, 3.0])),
+                    property_type=random.choice(property_types),
+                    host=random.choice(host_users),
+                    is_active=True
+                )
+                listings.append(listing)
+                
+                if (i + 1) % 3 == 0:
+                    self.stdout.write(f'Created {i+1}/{count} listings...')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Failed to create listing {i+1}: {e}'))
         
         self.stdout.write(f'Created {len(listings)} listings')
         return listings
-    
+
+
     def _create_bookings(self, count, listings, users):
-        """Create bookings."""
-        guests = [u for u in users if not u.email.endswith('@travel.com')]
+        """Create sample bookings."""
+        if not listings or not users:
+            self.stdout.write(self.style.WARNING('Skipping bookings - insufficient data'))
+            return []  # Return empty list
+        
+        # Get guest users (exclude hosts)
+        guest_users = [u for u in users if not u.username.startswith('host')]
+        if not guest_users:
+            guest_users = users  # Fallback to all users
+        
+        bookings = []  # Initialize empty list
         
         for i in range(count):
-            listing = random.choice(listings)
-            guest = random.choice(guests) if guests else users[0]
-            
-            start = date.today() + timedelta(days=random.randint(10, 60))
-            end = start + timedelta(days=random.randint(2, 5))
-            nights = (end - start).days
-            total = listing.price_per_night * Decimal(nights)
-            
-            Booking.objects.create(
-                listing=listing,
-                guest=guest,
-                check_in_date=start,
-                check_out_date=end,
-                total_price=total,
-                status=random.choice(['pending', 'confirmed'])
-            )
-            
-            if i % 5 == 0:
-                self.stdout.write(f'Created {i+1}/{count} bookings...')
-    
+            try:
+                listing = random.choice(listings)
+                guest = random.choice(guest_users)
+                
+                # Generate random future dates
+                start_date = date.today() + timedelta(days=random.randint(7, 120))
+                end_date = start_date + timedelta(days=random.randint(1, 7))
+                nights = (end_date - start_date).days
+                total_price = listing.price_per_night * Decimal(nights)
+                
+                booking = Booking.objects.create(
+                    listing=listing,
+                    guest=guest,
+                    check_in_date=start_date,
+                    check_out_date=end_date,
+                    number_of_guests=random.randint(1, min(3, listing.max_guests)),
+                    total_price=total_price,
+                    status=random.choice(['pending', 'confirmed', 'cancelled'])
+                )
+                bookings.append(booking)  # Add to list
+                
+                if (i + 1) % 5 == 0:
+                    self.stdout.write(f'Created {i+1}/{count} bookings...')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Failed to create booking {i+1}: {e}'))
+        
+        self.stdout.write(f'Created {len(bookings)} bookings')
+        return bookings  # Return the list
+
+
     def _create_reviews(self, count, listings, users):
-        """Create reviews."""
-        reviewers = list(users)
+        """Create sample reviews."""
+        if not listings or not users:
+            self.stdout.write(self.style.WARNING('Skipping reviews - insufficient data'))
+            return []  # Return empty list
+        
+        # Get reviewer users (anyone except listing hosts)
+        reviewer_users = list(users)
+        
+        review_templates = [
+            "Amazing stay! The {city} location was perfect.",
+            "Great property and host. Highly recommended!",
+            "Clean, comfortable, and exactly as described.",
+            "Fantastic experience! Would definitely return.",
+            "Excellent {property_type} in a great neighborhood."
+        ]
+        
+        reviews = []  # Initialize empty list
         
         for i in range(count):
-            listing = random.choice(listings)
-            reviewer = random.choice([u for u in reviewers if u != listing.host])
-            
-            Review.objects.create(
-                listing=listing,
-                reviewer=reviewer,
-                rating=random.randint(1, 5),
-                title=f"Great stay in {listing.city}!",
-                comment=f"Really enjoyed {listing.title}. Clean and comfortable.",
-                stay_date=date.today() - timedelta(days=random.randint(1, 30))
-            )
-            
-            if i % 3 == 0:
-                self.stdout.write(f'Created {i+1}/{count} reviews...')
+            try:
+                listing = random.choice(listings)
+                reviewer = random.choice(reviewer_users)
+                
+                # Skip if reviewer is the host
+                if reviewer == listing.host:
+                    continue
+                
+                review_text = random.choice(review_templates).format(
+                    city=listing.city,
+                    property_type=listing.property_type
+                )
+                
+                review = Review.objects.create(
+                    listing=listing,
+                    reviewer=reviewer,
+                    rating=random.randint(3, 5),  # Mostly positive
+                    title=f"{random.choice(['Great', 'Amazing', 'Fantastic'])} {listing.city} Stay",
+                    comment=f"{review_text} The host was very responsive and the {listing.property_type} was clean and comfortable.",
+                    stay_date=date.today() - timedelta(days=random.randint(30, 365))
+                )
+                reviews.append(review)  # Add to list
+                
+                if (i + 1) % 3 == 0:
+                    self.stdout.write(f'Created {i+1}/{count} reviews...')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Failed to create review {i+1}: {e}'))
+        
+        self.stdout.write(f'Created {len(reviews)} reviews')
+        return reviews  # Return the list
