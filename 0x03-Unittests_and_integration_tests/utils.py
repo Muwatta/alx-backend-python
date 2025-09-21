@@ -1,75 +1,59 @@
 #!/usr/bin/env python3
-"""Generic utilities for github org client.
-"""
-import requests
-from functools import wraps
-from typing import (
-    Mapping,
-    Sequence,
-    Any,
-    Dict,
-    Callable,
-)
+"""Utility module for nested map access, JSON fetching, and memoization."""
 
-__all__ = [
-    "access_nested_map",
-    "get_json",
-    "memoize",
-]
+from typing import Mapping, Sequence, Any, Dict, Callable
+import requests
 
 
 def access_nested_map(nested_map: Mapping, path: Sequence) -> Any:
-    """Access nested map with key path.
-    Parameters
-    ----------
-    nested_map: Mapping
-        A nested map
-    path: Sequence
-        a sequence of key representing a path to the value
-    Example
-    -------
-    >>> nested_map = {"a": {"b": {"c": 1}}}
-    >>> access_nested_map(nested_map, ["a", "b", "c"])
-    1
+    """Access a value in a nested dictionary using a sequence of keys.
+
+    Args:
+        nested_map (Mapping): The nested dictionary to traverse.
+        path (Sequence): The sequence of keys to follow.
+
+    Returns:
+        Any: The value at the end of the path.
+
+    Raises:
+        KeyError: If a key in the path is missing or inaccessible.
     """
     for key in path:
-        if not isinstance(nested_map, Mapping):
+        try:
+            nested_map = nested_map[key]
+        except (KeyError, TypeError):
             raise KeyError(key)
-        nested_map = nested_map[key]
-
     return nested_map
 
 
 def get_json(url: str) -> Dict:
-    """Get JSON from remote URL.
+    """Fetch JSON data from a given URL.
+
+    Args:
+        url (str): The URL to fetch from.
+
+    Returns:
+        Dict: The JSON payload from the response.
     """
     response = requests.get(url)
     return response.json()
 
 
 def memoize(fn: Callable) -> Callable:
-    """Decorator to memoize a method.
-    Example
-    -------
-    class MyClass:
-        @memoize
-        def a_method(self):
-            print("a_method called")
-            return 42
-    >>> my_object = MyClass()
-    >>> my_object.a_method
-    a_method called
-    42
-    >>> my_object.a_method
-    42
-    """
-    attr_name = "_{}".format(fn.__name__)
+    """Decorator to memoize a method as a cached property.
 
-    @wraps(fn)
-    def memoized(self):
-        """"memoized wraps"""
+    Args:
+        fn (Callable): The method to memoize.
+
+    Returns:
+        Callable: A property that caches the result of the method.
+    """
+    attr_name = f"_{fn.__name__}"
+
+    @property
+    def wrapper(self):
         if not hasattr(self, attr_name):
             setattr(self, attr_name, fn(self))
         return getattr(self, attr_name)
 
-    return property(memoized)
+    return wrapper
