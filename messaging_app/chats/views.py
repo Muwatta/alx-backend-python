@@ -21,7 +21,6 @@ User = get_user_model()
 class ConversationViewSet(viewsets.ModelViewSet):
     """API endpoints for conversations."""
     
-    # ADD THESE LINES:
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated]
@@ -31,7 +30,10 @@ class ConversationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return self.queryset.filter(
             participants=user
-        ).select_related('messages__sender').prefetch_related('participants')
+        ).prefetch_related(
+            'participants',           # Many-to-many users
+            'messages__sender'        # Reverse FK to messages, then sender
+        ).order_by('-created_at')     # Sort by newest first
     
     def get_serializer_class(self):
         """Use different serializers for different actions."""
@@ -99,7 +101,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Return messages (paginated or limited)
+        # Return messages with prefetching
         messages = conversation.messages.select_related('sender').order_by('sent_at')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
@@ -108,7 +110,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only API for messages (filtered by conversation)."""
     
-    # ADD THESE LINES:
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
@@ -117,12 +118,14 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         """Filter messages by conversation and user permission."""
         conversation_id = self.kwargs.get('conversation_pk')
         if not conversation_id:
-            return Message.objects.none()
+            return self.queryset.none()
         
         conversation = get_object_or_404(Conversation, id=conversation_id)
         
         # Only show if user is participant
         if not conversation.participants.filter(id=self.request.user.id).exists():
-            return Message.objects.none()
+            return self.queryset.none()
         
-        return self.queryset.filter(conversation=conversation).select_related('sender').order_by('sent_at')
+        return self.queryset.filter(
+            conversation=conversation
+        ).select_related('sender').order_by('sent_at')
