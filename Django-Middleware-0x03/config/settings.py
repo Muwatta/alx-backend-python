@@ -31,10 +31,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.chats.middleware.RequestLoggingMiddleware',
-    'apps.chats.middleware.RestrictAccessByTimeMiddleware',
-    'apps.chats.middleware.OffensiveLanguageMiddleware',
-    'apps.chats.middleware.RolePermissionMiddleware',
+    'apps.chats.middleware.middleware.RequestLoggingMiddleware',
+    'apps.chats.middleware.middleware.RestrictAccessByTimeMiddleware',
+    'apps.chats.middleware.middleware.OffensiveLanguageMiddleware',
+    'apps.chats.middleware.middleware.RolePermissionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
