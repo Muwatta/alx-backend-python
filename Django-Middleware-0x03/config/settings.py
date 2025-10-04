@@ -17,10 +17,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'apps.chats',
-    'apps.users',
-    'apps.listings',
-    'apps.core',
+    'chats',
+    'users',
+    'listings',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -31,10 +31,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.chats.middleware.middleware.RequestLoggingMiddleware',
-    'apps.chats.middleware.middleware.RestrictAccessByTimeMiddleware',
-    'apps.chats.middleware.middleware.OffensiveLanguageMiddleware',
-    'apps.chats.middleware.middleware.RolePermissionMiddleware',
+    'chats.middleware.RequestLoggingMiddleware',
+    'chats.middleware.RestrictAccessByTimeMiddleware',
+    'chats.middleware.OffensiveLanguageMiddleware',
+    'chats.middleware.RolePermissionMiddleware',
+    'chats.rate_limit.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
