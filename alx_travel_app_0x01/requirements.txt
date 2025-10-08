@@ -1,0 +1,3 @@
+django>=4.2
+djangorestframework>=3.14
+drf-yasg>=1.21djangorestframework>=3.15.2
