@@ -19,3 +19,7 @@ spec:
           image: muwatta/messaging_app:blue
           ports:
             - containerPort: 8000
+      spec:
+  containers:
+    - name: messaging-app
+      image: <your-docker-username>/messaging-app:2.0

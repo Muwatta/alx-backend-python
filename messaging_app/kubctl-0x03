@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Apply the updated deployment
+kubectl apply -f blue_deployment.yaml
+
+# Monitor rollout progress
+kubectl rollout status deployment/messaging-app
+
+# Test app for downtime (optional)
+for i in {1..10}; do
+  curl http://<service-ip>:<port>
+  sleep 1
+done
