@@ -1,0 +1,12 @@
+# Install Nginx Ingress controller
+minikube addons enable ingress
+
+# Apply the ingress resource
+kubectl apply -f ingress.yaml
+
+# Verify ingress controller and ingress resource
+kubectl get pods -n ingress-nginx
+kubectl get ingress
+
+# Test access via host mapping
+curl http://messaging-app.local
