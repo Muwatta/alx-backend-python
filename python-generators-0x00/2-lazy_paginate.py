@@ -1,40 +1,23 @@
-#!/usr/bin/env python3
-"""
-2-lazy_paginate.py
-- lazy_pagination(page_size): generator yielding pages (lists of dicts)
-- paginate_users(page_size, offset): helper (per project spec)
-Only one loop inside the main generator.
-"""
+#!/usr/bin/python3
+seed = __import__('seed')
 
-from seed import connect_to_prodev
 
 def paginate_users(page_size, offset):
-    conn = connect_to_prodev()
-    if conn is None:
-        return []
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute(f"SELECT user_id, name, email, age FROM user_data LIMIT %s OFFSET %s", (page_size, offset))
-        rows = cursor.fetchall()
-        return rows
-    finally:
-        cursor.close()
-        conn.close()
+    """Fetch a page of users from the database."""
+    connection = seed.connect_to_prodev()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}")
+    rows = cursor.fetchall()
+    connection.close()
+    return rows
 
 
-def lazy_pagination(page_size=100):
-    """
-    Generator that fetches the next page only when requested.
-    Single loop: while True
-    """
+def lazy_paginate(page_size):
+    """Generator that lazily fetches pages of users."""
     offset = 0
-    while True:
+    while True:  # only one loop
         rows = paginate_users(page_size, offset)
         if not rows:
             break
-        page = [
-            {"user_id": r["user_id"], "name": r["name"], "email": r["email"], "age": int(r["age"])}
-            for r in rows
-        ]
-        yield page
+        yield rows
         offset += page_size
