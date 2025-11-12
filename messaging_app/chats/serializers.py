@@ -1,0 +1,53 @@
+from rest_framework import serializers
+from .models import User, Conversation, Message
+
+
+# --------------------------
+# 1️⃣ User Serializer
+# --------------------------
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'user_id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'phone_number',
+        ]
+
+
+# --------------------------
+# 2️⃣ Message Serializer
+# --------------------------
+class MessageSerializer(serializers.ModelSerializer):
+    sender = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = [
+            'message_id',
+            'conversation',
+            'sender',
+            'message_body',
+            'sent_at',
+            'created_at',
+        ]
+
+
+# --------------------------
+# 3️⃣ Conversation Serializer
+# --------------------------
+class ConversationSerializer(serializers.ModelSerializer):
+    participants = UserSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Conversation
+        fields = [
+            'conversation_id',
+            'participants',
+            'messages',
+            'created_at',
+        ]
