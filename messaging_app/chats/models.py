@@ -9,6 +9,9 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     user_id = models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True)
     email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  # Explicitly declared
+    first_name = models.CharField(max_length=150, blank=True)  # Explicitly declared
+    last_name = models.CharField(max_length=150, blank=True)   # Explicitly declared
     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
