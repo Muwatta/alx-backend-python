@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for utils.py functions.
+Unittests for utils.py functions: access_nested_map, get_json, and memoize.
 """
 
 import unittest
@@ -10,6 +10,7 @@ from utils import access_nested_map, get_json, memoize
 
 
 class TestAccessNestedMap(unittest.TestCase):
+    """Tests for access_nested_map function."""
 
     @parameterized.expand([
         ({"a": 1}, ("a",), 1),
@@ -30,6 +31,7 @@ class TestAccessNestedMap(unittest.TestCase):
 
 
 class TestGetJson(unittest.TestCase):
+    """Tests for get_json function."""
 
     @parameterized.expand([
         ("http://example.com", {"payload": True}),
@@ -44,6 +46,7 @@ class TestGetJson(unittest.TestCase):
 
 
 class TestMemoize(unittest.TestCase):
+    """Tests for memoize decorator."""
 
     def test_memoize(self):
         class TestClass:
@@ -56,8 +59,6 @@ class TestMemoize(unittest.TestCase):
 
         obj = TestClass()
         with patch.object(obj, "a_method", return_value=42) as mock_method:
-            result1 = obj.a_property()
-            result2 = obj.a_property()
-            self.assertEqual(result1, 42)
-            self.assertEqual(result2, 42)
+            self.assertEqual(obj.a_property, 42)
+            self.assertEqual(obj.a_property, 42)
             mock_method.assert_called_once()
